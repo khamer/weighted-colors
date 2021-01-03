@@ -1,6 +1,6 @@
 {
   "name": "weighted-colors",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "sass color functions for working with weighted palettes",
   "main": "src/weighted-colors.scss",
   "keywords": [

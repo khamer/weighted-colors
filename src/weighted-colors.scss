@@ -52,17 +52,17 @@ $color-weights: () !default;
   }
 }
 
-@function color-weight($color, $weight) {
+@function color-weight($color, $weight: 400) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, $amount);
+    @return color-weight-get($shades, $weight);
 }
 
-@function color-heavier($color, $amount: 300) {
+@function color-heavier($color, $weight: 300) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, color-weight-find-weight($color, $shades) + $amount);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) + $weight);
 }
 
-@function color-lighter($color, $amount: 300) {
+@function color-lighter($color, $weight: 300) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, color-weight-find-weight($color, $shades) - $amount);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) - $weight);
 }
