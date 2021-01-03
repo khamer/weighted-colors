@@ -1,5 +1,42 @@
+///
+/// A map of color scales. Example:
+///
+///   $color-weights: (
+///     primary: (
+///       100: #ee8888,
+///       400: #dd5555,
+///       700: #773333
+///     ),
+///     secondary: (
+///       400: #335588,
+///       700: #112244
+///     )
+///   );
+///
+/// You should include all the colors you'd like to manage with weighted
+/// colors. The numeric keys are expected to go from 100-900, like font
+/// weights, with 400 being the default. For example,
+///
+///   - color-weight-get(primary) returns #dd5555
+///   - color-weight-get(secondary) returns #112244
+///
+/// You can also specify colors as a list instead of a map, however using a map
+/// is recommended:
+///
+///   $color-weights: (
+///     severity: yellow orange red
+///   );
+///
+/// If you do this, then the 100-900 scale is just evenly divided, so
+/// 100/200/300 are yellow, 400/500/600 are orange, and 700/800/900 are
+/// red.
+///
 $color-weights: () !default;
 
+
+///
+/// Internal function. Returns the map or list of shades containing $color.
+///
 @function color-weight-find-shades($color) {
   @each $name, $weights in $color-weights {
     @each $weight, $shade in $weights {
@@ -11,6 +48,10 @@ $color-weights: () !default;
   @return null;
 }
 
+
+///
+/// Internal function. Returns the weight of $color within $shades.
+///
 @function color-weight-find-weight($color, $shades) {
   @each $weight, $shade in color-weight-find-shades($color) {
     @if $shade == $color {
@@ -20,8 +61,24 @@ $color-weights: () !default;
   @return null;
 }
 
+
+///
+/// Returns a color given a color scale and weight.
+///
+/// $color
+///     Either a map, list, or key of a map/list within $color-weights.
+///
+/// $weight (default: 400)
+///     The weight of the color you want.
+///
+/// $mixing (default: false)
+///     When enabled, if a weight is specified which doesn't have a color, a
+///     color is calculated by mixing the adjacent colors together.
+///
 @function color-weight-get($color, $weight: 400, $mixing: false) {
-  @if type-of($color) == 'map' {
+  @if map-has-key($color-weights, $color) {
+    @return color-weight-get(map-get($color-weights, $color), $weight, $mixing);
+  } @else if type-of($color) == 'map' {
     $last-shade: null;
     $last-weight: null;
     @each $w, $shade in $color {
@@ -44,25 +101,75 @@ $color-weights: () !default;
     @return $last-shade;
 
   } @else if type-of($color) == 'list' {
+    @if $mixing {
+      @warn "Mixing is not supported with lists; use a weighted map."
+    }
     $index: min(max(1, ceil($weight / 900 * length($color))), length($color));
     @return nth($color, $index);
-
-  } @else if map-has-key($color-weights, $color) {
-    @return color-weight-get(map-get($color-weights, $color), $weight, $mixing);
+  } @else {
+    @error "First argument to doesn't appear to be map, list, or name of a color in $color-weights."
   }
 }
 
-@function color-weight($color, $weight: 400) {
+
+///
+/// Returns the color in the same color scale as $color with weight $weight.
+///
+/// $color
+///     Starting point color. Needs to exist within a scale in $color-weights.
+///
+/// $weight (default: 400)
+///     Weight for new color.
+///
+/// $mixing (default: false)
+///     When enabled, if a weight is specified which doesn't have a color, a
+///     color is calculated by mixing the adjacent colors together.
+///
+@function color-weight($color, $weight: 400, $mixing: false) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, $weight);
+    @return color-weight-get($shades, $weight, $mixing);
 }
 
-@function color-heavier($color, $weight: 300) {
+
+///
+/// Returns the color in the same color scale as $color that's $weight heavier.
+/// For example, if the starting color was Red 400 and $weight is 100, it will
+/// return Red 500.
+///
+/// $color
+///     Starting point color. Needs to exist within a scale in $color-weights.
+///
+/// $weight (default: 300)
+///     Amount to darken the weight. Default is 300; changes 400 to 700, 100 to
+///     400, etc.
+///
+/// $mixing (default: false)
+///     When enabled, if a weight is specified which doesn't have a color, a
+///     color is calculated by mixing the adjacent colors together.
+///
+@function color-heavier($color, $weight: 300, $mixing: false) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, color-weight-find-weight($color, $shades) + $weight);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) + $weight, $mixing);
 }
 
-@function color-lighter($color, $weight: 300) {
+
+///
+/// Returns the color in the same color scale as $color that's $weight lighter.
+/// For example, if the starting color was Red 400 and $weight is 100, it will
+/// return Red 300.
+///
+/// $color
+///     Starting point color. Needs to exist within a scale in $color-weights.
+///
+/// $weight (default: 300)
+///     Amount to lighten the weight. Default is 300; changes 700 to 400, 400
+///     to 100, etc.
+///
+/// $mixing (default: false)
+///     When enabled, if a weight is specified which doesn't have a color, a
+///     color is calculated by mixing the adjacent colors together.
+///
+@function color-lighter($color, $weight: 300, $mixing: false) {
     $shades: color-weight-find-shades($color);
-    @return color-weight-get($shades, color-weight-find-weight($color, $shades) - $weight);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) - $weight, $mixing);
 }
