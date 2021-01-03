@@ -1,0 +1,68 @@
+$color-weights: () !default;
+
+@function color-weight-find-shades($color) {
+  @each $name, $weights in $color-weights {
+    @each $weight, $shade in $weights {
+      @if $shade == $color {
+        @return $weights;
+      }
+    }
+  }
+  @return null;
+}
+
+@function color-weight-find-weight($color, $shades) {
+  @each $weight, $shade in color-weight-find-shades($color) {
+    @if $shade == $color {
+      @return $weight;
+    }
+  }
+  @return null;
+}
+
+@function color-weight-get($color, $weight: 400, $mixing: false) {
+  @if type-of($color) == 'map' {
+    $last-shade: null;
+    $last-weight: null;
+    @each $w, $shade in $color {
+      @if $weight == $w {
+        @return $shade;
+      } @else if $weight < $w {
+        @if $last-shade != null {
+          @if $mixing {
+            @return mix($last-shade, $shade, 100% * ($w - $weight) / ($w - $last-weight));;
+          } @else {
+            @return $last-shade;
+          }
+        } @else {
+          @return $shade;
+        }
+      }
+      $last-shade: $shade;
+      $last-weight: $w;
+    }
+    @return $last-shade;
+
+  } @else if type-of($color) == 'list' {
+    $index: min(max(1, ceil($weight / 900 * length($color))), length($color));
+    @return nth($color, $index);
+
+  } @else if map-has-key($color-weights, $color) {
+    @return color-weight-get(map-get($color-weights, $color), $weight, $mixing);
+  }
+}
+
+@function color-weight($color, $weight) {
+    $shades: color-weight-find-shades($color);
+    @return color-weight-get($shades, $amount);
+}
+
+@function color-heavier($color, $amount: 300) {
+    $shades: color-weight-find-shades($color);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) + $amount);
+}
+
+@function color-lighter($color, $amount: 300) {
+    $shades: color-weight-find-shades($color);
+    @return color-weight-get($shades, color-weight-find-weight($color, $shades) - $amount);
+}
